@@ -1,0 +1,20 @@
+model:
+  vlm_name: "google/paligemma-3b-pt-224"
+  action_expert_ckpt: null          # path to your action expert .pt file
+  action_expert_arch: "smolvla"     # smolvla | pi0 | custom
+
+data:
+  langgap_dir: "./langgap/data"
+  scene_ids: null                   # null = all scenes; or e.g. [0,1,2,3,4]
+  instructions_per_scene: 3         # object variants per scene (milk/tomato/jeans)
+  image_size: 224
+
+probe:
+  cv_folds: 5
+  max_iter: 1000
+  random_state: 42
+
+output:
+  results_dir: "./results"
+  save_hidden_states: true
+  plot_dpi: 150
