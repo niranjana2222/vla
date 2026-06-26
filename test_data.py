@@ -14,8 +14,8 @@ from PIL import Image
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from data.synthetic import SyntheticLoader
-from data.langgap_loader import LangGapLoader
+from synthetic import SyntheticLoader
+from langgap_loader import LangGapLoader
 
 
 class TestSyntheticLoader:

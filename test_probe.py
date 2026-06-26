@@ -17,7 +17,7 @@ import pytest
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from probes.train import train_probes, save_results, load_results
+from train import train_probes, save_results, load_results
 
 
 def make_layer_data(

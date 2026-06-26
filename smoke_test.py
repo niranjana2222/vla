@@ -25,9 +25,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from data.synthetic import SyntheticLoader, SyntheticExtractor
-from probes.train import train_probes, save_results
-from probes.evaluate import plot_probe_accuracy, print_summary
+from synthetic import SyntheticLoader, SyntheticExtractor
+from train import train_probes, save_results
+from evaluate import plot_probe_accuracy, print_summary
 
 
 def main(args):

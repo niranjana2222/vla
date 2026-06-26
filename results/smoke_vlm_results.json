@@ -1,0 +1,201 @@
+{
+  "component": "vlm",
+  "layers": {
+    "0": {
+      "accuracy": 0.31111111111111117,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": false
+    },
+    "1": {
+      "accuracy": 0.36666666666666664,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": false
+    },
+    "2": {
+      "accuracy": 0.45555555555555555,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": true
+    },
+    "3": {
+      "accuracy": 0.33333333333333337,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": false
+    },
+    "4": {
+      "accuracy": 0.3,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": false
+    },
+    "5": {
+      "accuracy": 0.38888888888888884,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": false
+    },
+    "6": {
+      "accuracy": 0.31111111111111106,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": false
+    },
+    "7": {
+      "accuracy": 0.3222222222222222,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": false
+    },
+    "8": {
+      "accuracy": 0.2777777777777778,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": false
+    },
+    "9": {
+      "accuracy": 0.28888888888888886,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": false
+    },
+    "10": {
+      "accuracy": 0.26666666666666666,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": false
+    },
+    "11": {
+      "accuracy": 0.38888888888888884,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": false
+    },
+    "12": {
+      "accuracy": 0.5222222222222221,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": true
+    },
+    "13": {
+      "accuracy": 0.4333333333333334,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": true
+    },
+    "14": {
+      "accuracy": 0.2666666666666667,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": false
+    },
+    "15": {
+      "accuracy": 0.3777777777777777,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": false
+    },
+    "16": {
+      "accuracy": 0.28888888888888886,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": false
+    },
+    "17": {
+      "accuracy": 0.9888888888888889,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": true
+    },
+    "18": {
+      "accuracy": 1.0,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": true
+    },
+    "19": {
+      "accuracy": 1.0,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": true
+    },
+    "20": {
+      "accuracy": 1.0,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": true
+    },
+    "21": {
+      "accuracy": 1.0,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": true
+    },
+    "22": {
+      "accuracy": 1.0,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": true
+    },
+    "23": {
+      "accuracy": 1.0,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": true
+    },
+    "24": {
+      "accuracy": 1.0,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": true
+    },
+    "25": {
+      "accuracy": 1.0,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": true
+    },
+    "26": {
+      "accuracy": 1.0,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": true
+    },
+    "27": {
+      "accuracy": 1.0,
+      "n_samples": 90,
+      "n_classes": 3,
+      "chance": 0.3333333333333333,
+      "above_chance": true
+    }
+  }
+}

@@ -24,7 +24,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .train import load_results
+from train import load_results
 
 
 matplotlib.rcParams.update({
