@@ -1,50 +1,44 @@
 """
-data/langgap_loader.py
-======================
-Loads scenes from the LangGap benchmark into the format the probe pipeline
-expects: a list of dicts with keys {image, instruction, label}.
+Loads episodes from the LangGap HuggingFace dataset (LeRobot format).
 
-LangGap structure (from https://github.com/YC11Hou/langgap):
-    data/
-        scene_0000/
-            base/
-                image.png
-                instruction.txt      "Pick up the milk and place it in the basket"
-            extended_0/
-                image.png            SAME image as base (same scene layout)
-                instruction.txt      "Pick up the tomato sauce and place it in the basket"
-            extended_1/
-                image.png
-                instruction.txt      "Pick up the jeans and place it in the basket"
-        scene_0001/
-            ...
+Expected directory layout (after huggingface-cli download):
+    langgap_hf/
+        meta/tasks.parquet                          task_index -> instruction
+        meta/episodes/chunk-000/file-000.parquet    episode metadata
+        data/chunk-000/file-000.parquet             per-frame: index, episode_index,
+                                                    frame_index, task_index, ...
+        videos/observation.images.image/
+            chunk-000/file-000.mp4                  camera frames (all episodes concatenated)
 
-The key property: image is IDENTICAL across base + all extended variants.
-Only the instruction (= object name) changes. This forces any probe signal
-to come purely from the instruction, not from visual differences.
-
-If langgap_dir doesn't exist or has no scenes, falls back to SyntheticLoader.
+The global `index` column in the data parquet is the frame's position in the
+MP4 file, so decoding frame N from the video gives the observation for the
+data row where index==N.
 """
 
-import os
-import json
 from pathlib import Path
 from typing import Optional
 
+import numpy as np
+import pandas as pd
 from PIL import Image
+
+
+def _read_parquet(path: Path) -> pd.DataFrame:
+    return pd.read_parquet(path, engine="pyarrow")
 
 
 class LangGapLoader:
     """
-    Loads LangGap scenes. Each scene produces N samples sharing one image
-    but with different object instructions. Label = instruction index within
-    the scene (0 = base, 1 = extended_0, 2 = extended_1, ...).
+    Samples frames from LangGap episodes, extracts images from MP4 video,
+    and returns {image, instruction, label} dicts ready for probe training.
 
     Args:
-        langgap_dir:  path to the LangGap data/ directory
-        scene_ids:    list of scene indices to load (None = all)
-        max_per_scene: max number of instructions per scene (including base)
-        image_size:   resize images to this square size
+        langgap_dir:        path to HF dataset root (e.g. ./langgap_hf)
+        scene_ids:          task indices to include (None = all)
+        max_per_scene:      unused, kept for API compatibility
+        image_size:         resize frames to this square size
+        frames_per_episode: frames sampled per episode (1 = middle frame)
+        camera:             which camera stream to use ('image' or 'image2')
     """
 
     def __init__(
@@ -53,92 +47,156 @@ class LangGapLoader:
         scene_ids: Optional[list] = None,
         max_per_scene: int = 3,
         image_size: int = 224,
+        frames_per_episode: int = 1,
+        camera: str = "image",
     ):
-        self.langgap_dir = Path(langgap_dir)
+        self.root = Path(langgap_dir)
         self.scene_ids = scene_ids
-        self.max_per_scene = max_per_scene
         self.image_size = image_size
+        self.frames_per_episode = frames_per_episode
+        self.camera = camera
 
-        self._scenes = self._discover_scenes()
-        if not self._scenes:
+        if not self.root.exists():
             raise FileNotFoundError(
-                f"No LangGap scenes found in {langgap_dir}.\n"
-                "Run: git clone https://github.com/YC11Hou/langgap\n"
-                "Or use SyntheticLoader for smoke testing."
+                f"Dataset not found: {langgap_dir}\n"
+                "Download with:\n"
+                "  huggingface-cli download YC11Hou/langgap_6 "
+                "--repo-type dataset --local-dir ./langgap_hf"
             )
 
-    def _discover_scenes(self) -> list:
-        """Return sorted list of scene directories."""
-        if not self.langgap_dir.exists():
-            return []
-        scenes = sorted(p for p in self.langgap_dir.iterdir() if p.is_dir())
-        if self.scene_ids is not None:
-            scenes = [scenes[i] for i in self.scene_ids if i < len(scenes)]
-        return scenes
+    def _load_tasks(self) -> dict[int, str]:
+        """Returns {task_index: instruction_string}."""
+        df = _read_parquet(self.root / "meta" / "tasks.parquet")
+        # tasks.parquet: index = instruction string, column = task_index
+        return {int(row["task_index"]): instr for instr, row in df.iterrows()}
 
-    def _load_image(self, path: Path) -> Image.Image:
-        img = Image.open(path).convert("RGB")
-        img = img.resize((self.image_size, self.image_size), Image.BICUBIC)
-        return img
+    def _load_frames_df(self) -> pd.DataFrame:
+        parts = []
+        for f in sorted((self.root / "data").rglob("*.parquet")):
+            parts.append(_read_parquet(f))
+        return pd.concat(parts, ignore_index=True)
 
-    def _load_instruction(self, scene_dir: Path, variant: str) -> Optional[str]:
-        """Load instruction text from scene_dir/variant/instruction.txt."""
-        txt_path = scene_dir / variant / "instruction.txt"
-        if not txt_path.exists():
-            return None
-        return txt_path.read_text().strip()
+    def _load_episodes_df(self) -> pd.DataFrame:
+        parts = []
+        for f in sorted((self.root / "meta" / "episodes").rglob("*.parquet")):
+            parts.append(_read_parquet(f))
+        return pd.concat(parts, ignore_index=True)
 
-    def _load_image_from_variant(self, scene_dir: Path, variant: str) -> Optional[Image.Image]:
-        img_path = scene_dir / variant / "image.png"
-        if not img_path.exists():
-            img_path = scene_dir / variant / "image.jpg"
-        if not img_path.exists():
-            return None
-        return self._load_image(img_path)
+    def _video_path(self, chunk_index: int, file_index: int) -> Path:
+        return (
+            self.root
+            / "videos"
+            / f"observation.images.{self.camera}"
+            / f"chunk-{chunk_index:03d}"
+            / f"file-{file_index:03d}.mp4"
+        )
+
+    def _extract_frame(self, video_path: Path, frame_pos: int) -> Image.Image:
+        """Extract a single frame by its position (0-based) in the MP4."""
+        try:
+            import decord
+            vr = decord.VideoReader(str(video_path), ctx=decord.cpu(0))
+            frame = vr[frame_pos].asnumpy()
+        except ImportError:
+            import cv2
+            cap = cv2.VideoCapture(str(video_path))
+            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_pos)
+            ret, frame = cap.read()
+            cap.release()
+            if not ret:
+                raise RuntimeError(
+                    f"Could not read frame {frame_pos} from {video_path}"
+                )
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        img = Image.fromarray(frame).convert("RGB")
+        return img.resize((self.image_size, self.image_size), Image.BICUBIC)
 
     def load(self) -> list[dict]:
         """
         Returns list of samples:
-            {
-                "image":       PIL.Image,
-                "instruction": str,
-                "label":       int,   # 0, 1, 2, ... (object index within scene)
-                "scene_id":    str,   # for debugging
-                "variant":     str,   # "base" | "extended_0" | ...
-            }
+            {image, instruction, label (=task_index), scene_id, variant}
         """
-        samples = []
-        for scene_dir in self._scenes:
-            variants = ["base"] + [
-                f"extended_{i}" for i in range(self.max_per_scene - 1)
-            ]
+        tasks = self._load_tasks()
+        frames_df = self._load_frames_df()
+        episodes_df = self._load_episodes_df()
 
-            scene_samples = []
-            for label, variant in enumerate(variants):
-                image = self._load_image_from_variant(scene_dir, variant)
-                instruction = self._load_instruction(scene_dir, variant)
-                if image is None or instruction is None:
+        # episode_index -> (chunk_index, file_index) for video lookup
+        ep_to_chunk = {
+            int(row["episode_index"]): (
+                int(row["meta/episodes/chunk_index"]),
+                int(row["meta/episodes/file_index"]),
+            )
+            for _, row in episodes_df.iterrows()
+        }
+
+        if self.scene_ids is not None:
+            frames_df = frames_df[frames_df["task_index"].isin(self.scene_ids)]
+
+        # The global `index` column = frame position in the concatenated MP4.
+        # Chunk 0 starts at index 0; subsequent chunks start at their first index.
+        chunk_start: dict[tuple, int] = {}
+        for (chunk_idx, file_idx), group in frames_df.groupby(
+            frames_df["episode_index"].map(ep_to_chunk)
+        ):
+            key = (chunk_idx, file_idx)
+            chunk_start[key] = min(chunk_start.get(key, int(group["index"].min())),
+                                   int(group["index"].min()))
+
+        samples = []
+        n_episodes = frames_df["episode_index"].nunique()
+
+        for episode_index, ep_frames in frames_df.groupby("episode_index"):
+            ep_frames = ep_frames.sort_values("frame_index")
+            task_index = int(ep_frames["task_index"].iloc[0])
+            instruction = tasks.get(task_index, f"task_{task_index}")
+
+            chunk_idx, file_idx = ep_to_chunk[episode_index]
+            video_path = self._video_path(chunk_idx, file_idx)
+            start = chunk_start[(chunk_idx, file_idx)]
+
+            n = len(ep_frames)
+            if self.frames_per_episode == 1:
+                pick_indices = [n // 2]
+            else:
+                pick_indices = list(
+                    np.linspace(0, n - 1, self.frames_per_episode, dtype=int)
+                )
+
+            for pick in pick_indices:
+                row = ep_frames.iloc[pick]
+                video_frame_pos = int(row["index"]) - start
+                try:
+                    image = self._extract_frame(video_path, video_frame_pos)
+                except Exception as e:
+                    print(
+                        f"  Warning: skipping episode {episode_index} "
+                        f"frame {video_frame_pos}: {e}"
+                    )
                     continue
-                scene_samples.append({
+                samples.append({
                     "image": image,
                     "instruction": instruction,
-                    "label": label,
-                    "scene_id": scene_dir.name,
-                    "variant": variant,
+                    "label": task_index,
+                    "scene_id": f"episode_{episode_index}",
+                    "variant": f"task_{task_index}",
                 })
 
-            if len(scene_samples) >= 2:
-                samples.extend(scene_samples)
-
-        print(f"Loaded {len(samples)} samples from {len(self._scenes)} scenes")
-        print(f"  Labels: {sorted(set(s['label'] for s in samples))}")
-        print(f"  Example: '{samples[0]['instruction']}'")
+        print(f"Loaded {len(samples)} samples from {n_episodes} episodes")
+        if samples:
+            print(f"  Labels: {sorted(set(s['label'] for s in samples))}")
+            print(f"  Example: '{samples[0]['instruction']}'")
+        else:
+            print("  WARNING: 0 samples — check dataset path and structure")
         return samples
 
     @property
     def n_classes(self) -> int:
-        return self.max_per_scene
+        if self.scene_ids is not None:
+            return len(self.scene_ids)
+        return len(self._load_tasks())
 
     @property
     def class_names(self) -> list[str]:
-        return [f"object_{i}" for i in range(self.max_per_scene)]
+        tasks = self._load_tasks()
+        ids = self.scene_ids if self.scene_ids is not None else sorted(tasks)
+        return [tasks.get(i, f"task_{i}") for i in ids]
