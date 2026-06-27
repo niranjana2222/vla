@@ -30,12 +30,12 @@ from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent))
 
-from data.langgap_loader import LangGapLoader
-from models.vlm_extractor import VLMExtractor
-from probes.train import train_probes, save_results
-from probes.evaluate import plot_probe_accuracy, print_summary
+from langgap_loader import LangGapLoader
+from vlm_extractor import VLMExtractor
+from train import train_probes, save_results
+from evaluate import plot_probe_accuracy, print_summary
 
 
 def main(args):

@@ -24,9 +24,9 @@ import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent))
 
-from probes.evaluate import plot_probe_accuracy, print_summary
+from evaluate import plot_probe_accuracy, print_summary
 
 
 def main(args):
@@ -38,10 +38,10 @@ def main(args):
 
     # If no pre-computed results, run extraction first
     if vlm_path is None:
-        from data.langgap_loader import LangGapLoader
-        from models.vlm_extractor import VLMExtractor
-        from models.action_extractor import ActionExpertExtractor
-        from probes.train import train_probes, save_results
+        from langgap_loader import LangGapLoader
+        from vlm_extractor import VLMExtractor
+        from action_extractor import ActionExpertExtractor
+        from train import train_probes, save_results
 
         loader = LangGapLoader(langgap_dir=args.langgap_dir, max_per_scene=3)
         samples = loader.load()
